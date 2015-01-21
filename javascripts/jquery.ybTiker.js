@@ -30,9 +30,15 @@
             delay: 30,
             reverse: false
         };
-
+        this.touch = ('ontouchstart' in document.documentElement) ? true : false;
         // Events
-        self.mousemove = false;
+        this.eventTypes = {
+            mousedown: (!this.touch) ? "mousedown" : "touchstart",
+            mousemove: (!this.touch) ? "mousemove" : "touchmove",
+            mouseup: (!this.touch) ? "mouseup" : "touchend"
+        }
+
+        this.mousemove = false;
 
         this.init();
         this.resize();
@@ -131,8 +137,8 @@
 
             $this.on("mouseleave", function() {
                 if(self.mousemove) {
-                    $list.off("mousemove");
-                    $list.trigger("mouseup");
+                    $list.off(self.eventTypes.mousemove);
+                    $list.trigger(self.eventTypes.mouseup);
                 }
 
                 if(self.itemsWidth > self.$parent.width()) {
@@ -149,7 +155,7 @@
                 flag = false,
                 $list = $this.find("." + self.listCls);
 
-            $list.on("mousedown", function(e) {
+            $list.on(self.eventTypes.mousedown, function(e) {
                 if($(e.target).hasClass(self.linkCls) || $(e.target).parents().hasClass(self.linkCls) ){
                     $(e.target).on("click", function(e) {
                         e.preventDefault();
@@ -163,7 +169,7 @@
                 clearInterval(self.timeout);
                 self.timeout = false;
 
-                $list.on("mousemove", function(e) {
+                $list.on(self.eventTypes.mousemove, function(e) {
                     var merg = start - e.clientX;
 
                     self.mousemove = true;
@@ -186,11 +192,11 @@
                 });
             });
 
-            $list.on("mouseup", function(e) {
+            $list.on(self.eventTypes.mouseup, function(e) {
                 e.preventDefault();
                 flag = false;
                 self.mousemove = false;
-                $list.off("mousemove");
+                $list.off(self.eventTypes.mousemove);
                 if(self.timeout) clearInterval(self.timeout);
                     // self.timeout = setInterval(function() {self._moveCarousel()}, self.options.delay);
 
