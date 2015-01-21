@@ -8,8 +8,8 @@
  * More information visit https://github.com/likeclever1/carousel/
  */
 
- "use strict";
- (function($) {
+"use strict";
+(function($) {
 
     $.carouselTicker = function (el, settings) {
         this.settings = settings;
@@ -55,19 +55,25 @@
         
             if($this.children().hasClass('self.wrapCls')) return;
 
-            self.initialize = true;
-
-            // if drag for a or img have tarouble, fix it
-            if($this.find("a").length) $this.find("a").attr("draggable", false);
-            if($this.find("img").length) $this.find("img").attr("draggable", false);
-
             self._calcItemsWidth();
 
             if(self.itemsWidth > self.$parent.width()) {
+                
+
                 $items.each(function() {
+
+                    self.initialize = true;
+
                     var $that = $(this),
                         clone;
                     
+                    // if drag for a or img have tarouble, fix it
+                    $this.on("dragstart", function(e) {
+                         if (e.target.nodeName.toUpperCase() == "IMG" || e.target.nodeName.toUpperCase() == "A") {
+                             return false;
+                         }
+                    });
+
                     if($that.hasClass(self.cloneCls)) return;
                         clone = $that.clone();
                         clone.addClass(self.cloneCls).appendTo($list);
@@ -156,34 +162,30 @@
                 $list = $this.find("." + self.listCls);
 
             $list.on(self.eventTypes.mousedown, function(e) {
-                if($(e.target).hasClass(self.linkCls) || $(e.target).parents().hasClass(self.linkCls) ){
-                    $(e.target).on("click", function(e) {
-                        e.preventDefault();
-                    })
-                }
-                var start = e.clientX,
+                var start = e.clientX || event.touches[0].pageX,
                     startLeft = $list.css("left");
-                
+                $(e.target).off("click");
                 flag = true;
 
                 clearInterval(self.timeout);
                 self.timeout = false;
 
                 $list.on(self.eventTypes.mousemove, function(e) {
-                    var merg = start - e.clientX;
+                    var offsetX = e.clientX || event.touches[0].pageX;
+                    var merg = start - offsetX; // fix for touch device
 
                     self.mousemove = true;
                     if(flag) {
                         if(parseFloat(startLeft) - merg >= 0) {
                             $list.css("left", "-=" + self.itemsWidth);
                             startLeft = -self.itemsWidth;
-                            start = e.clientX;
+                            start = e.clientX || event.touches[0].pageX;
                         }
 
                         if(Math.abs(parseFloat(startLeft) - merg) >= self.itemsWidth) {
                             $list.css("left", 0);
                             startLeft = 0;
-                            start = e.clientX;
+                            start = e.clientX || event.touches[0].pageX;
                         }
 
                         $list.css("left", parseFloat(startLeft) - merg + "px");
@@ -191,15 +193,20 @@
 
                 });
             });
-
+            
             $list.on(self.eventTypes.mouseup, function(e) {
                 e.preventDefault();
+                if($(e.target).attr("href") || $(e.target).parents().attr("href") && self.mousemove){
+                    $(e.target).on("click", function(e) {
+                        e.preventDefault();
+                    });
+                }
                 flag = false;
                 self.mousemove = false;
                 $list.off(self.eventTypes.mousemove);
+                
                 if(self.timeout) clearInterval(self.timeout);
-                    // self.timeout = setInterval(function() {self._moveCarousel()}, self.options.delay);
-
+                if(self.touch) self.timeout = setInterval(function() {self._moveCarousel()}, self.options.delay);
             });
         },
 
@@ -210,13 +217,11 @@
 
             $(window).on('resize', function() {
                 self._calcItemsWidth();
-                
                 if(self.$parent.width() < self.itemsWidth) {
                     if(!self.initialize) self.init();
                 } else {
                     if(self.initialize) self._destructor();
                 }
-
             });
         },
 
@@ -237,7 +242,6 @@
             self.initialize = false;
             self.timeout = false;
         }
-
     };
 
     $.fn.carouselTicker = function(settings) {
@@ -246,4 +250,4 @@
         });
     };
 
- })(jQuery);
+})(jQuery);
